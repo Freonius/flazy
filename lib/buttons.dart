@@ -18,6 +18,7 @@ class MainButton extends StatefulWidget {
   final double? relativeWidth;
   final double horizontalPadding;
   final double borderSize;
+  final String? tooltip;
 
   /// Creates a MainButton widget.
   /// [text] is the text displayed on the button.
@@ -34,6 +35,7 @@ class MainButton extends StatefulWidget {
     this.relativeWidth = 0.5,
     this.horizontalPadding = 0,
     this.borderSize = 4,
+    this.tooltip,
     super.key,
   });
 
@@ -51,86 +53,95 @@ class MainButtonState extends State<MainButton> {
       padding: const EdgeInsets.all(
         5,
       ),
-      child: InkWell(
-        onTap: () async {
-          if (widget.disabled || isLoading) {
-            return;
-          }
+      child: widget.tooltip != null
+          ? Tooltip(
+              message: widget.tooltip!,
+              child: mainWidget(context),
+            )
+          : mainWidget(context),
+    );
+  }
+
+  Widget mainWidget(BuildContext context) {
+    return InkWell(
+      onTap: () async {
+        if (widget.disabled || isLoading) {
+          return;
+        }
+        setState(() {
+          isLoading = true;
+        });
+        try {
+          await widget.onClick();
           setState(() {
             isLoading = true;
           });
-          try {
-            await widget.onClick();
-            setState(() {
-              isLoading = true;
-            });
-          } on Exception catch (e) {
-            if (widget.onError != null) {
-              widget.onError!(e);
-            } else {
-              rethrow;
-            }
-          } catch (e) {
-            if (widget.onError != null) {
-              widget.onError!(e);
-            } else {
-              rethrow;
-            }
-          } finally {
-            setState(() {
-              isLoading = false;
-            });
+        } on Exception catch (e) {
+          if (widget.onError != null) {
+            widget.onError!(e);
+          } else {
+            rethrow;
           }
-        },
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            vertical: widget.verticalPadding,
-            horizontal: widget.horizontalPadding,
+        } catch (e) {
+          if (widget.onError != null) {
+            widget.onError!(e);
+          } else {
+            rethrow;
+          }
+        } finally {
+          setState(() {
+            isLoading = false;
+          });
+        }
+      },
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          vertical: widget.verticalPadding,
+          horizontal: widget.horizontalPadding,
+        ),
+        width: widget.relativeWidth == null
+            ? null
+            : (MediaQuery.of(context).size.width * widget.relativeWidth!),
+        decoration: BoxDecoration(
+          color: widget.inverted
+              ? (widget.backgroundColor ??
+                  Theme.of(context).colorScheme.onPrimary)
+              : (widget.mainColor ?? Theme.of(context).colorScheme.primary),
+          borderRadius: BorderRadius.circular(
+            50,
           ),
-          width: widget.relativeWidth == null
-              ? null
-              : (MediaQuery.of(context).size.width * widget.relativeWidth!),
-          decoration: BoxDecoration(
+          border: Border.all(
+            color: widget.mainColor ?? Theme.of(context).colorScheme.primary,
+            width: widget.borderSize,
+          ),
+        ),
+        child: Center(
+          child: Loadable(
+            size: (widget.fontSize ??
+                    ((Theme.of(context).textTheme.bodyMedium ??
+                                const TextStyle(fontSize: 13))
+                            .fontSize ??
+                        13)) +
+                4.5, // TODO: Fix this
+            isLoading: isLoading,
             color: widget.inverted
-                ? (widget.backgroundColor ??
-                    Theme.of(context).colorScheme.secondary)
-                : (widget.mainColor ?? Theme.of(context).colorScheme.primary),
-            borderRadius: BorderRadius.circular(
-              50,
-            ),
-            border: Border.all(
-              color: widget.mainColor ?? Theme.of(context).colorScheme.primary,
-              width: widget.borderSize,
-            ),
-          ),
-          child: Center(
-            child: Loadable(
-              size: (widget.fontSize ??
-                      ((Theme.of(context).textTheme.bodyMedium ??
-                                  const TextStyle(fontSize: 13))
-                              .fontSize ??
-                          13)) +
-                  3.5,
-              isLoading: isLoading,
-              color: widget.inverted
-                  ? (widget.mainColor ?? Theme.of(context).colorScheme.primary)
-                  : (widget.backgroundColor ??
-                      Theme.of(context).colorScheme.secondary),
-              child: Text(
-                widget.text,
-                style: TextStyle(
-                  color: widget.inverted
-                      ? (widget.mainColor ??
-                          Theme.of(context).colorScheme.primary)
-                      : (widget.backgroundColor ??
-                          Theme.of(context).colorScheme.secondary),
-                  fontSize: (widget.fontSize ??
-                      ((Theme.of(context).textTheme.bodyMedium ??
-                                  const TextStyle(fontSize: 13))
-                              .fontSize ??
-                          13)),
-                  // fontWeight: FontWeight.w600,
-                ),
+                ? (widget.mainColor ?? Theme.of(context).colorScheme.primary)
+                : (widget.backgroundColor ??
+                    Theme.of(context).colorScheme.onPrimary),
+            child: Text(
+              widget.text,
+              style: TextStyle(
+                color: widget.inverted
+                    ? (widget.mainColor ??
+                        Theme.of(context).colorScheme.primary)
+                    : (widget.backgroundColor ??
+                        Theme.of(context).colorScheme.onPrimary),
+                fontSize: (widget.fontSize ??
+                    ((Theme.of(context).textTheme.bodyMedium ??
+                                const TextStyle(fontSize: 13))
+                            .fontSize ??
+                        13)),
+                // fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -142,8 +153,10 @@ class MainButtonState extends State<MainButton> {
 
 class CircularButton extends StatefulWidget {
   final String? text;
-  final Widget icon;
+  final Widget? icon;
+  final IconData? iconData;
   final double size;
+  final double? iconSize;
   final Future<void> Function() onClick;
   final Future<void> Function(Object)? onError;
   final bool disabled;
@@ -151,18 +164,22 @@ class CircularButton extends StatefulWidget {
   final Color? fontColor;
   final double? fontSize;
   final Color? borderColor;
+  final String? tooltip;
 
   const CircularButton({
     required this.icon,
+    required this.iconData,
     required this.onClick,
     this.text,
     this.size = 50,
     this.onError,
     this.disabled = false,
     this.color,
+    this.iconSize,
     this.fontColor,
     this.fontSize,
     this.borderColor,
+    this.tooltip,
     super.key,
   });
 
@@ -177,6 +194,15 @@ class CircularButtonState extends State<CircularButton> {
 
   @override
   Widget build(BuildContext context) {
+    return widget.tooltip != null
+        ? Tooltip(
+            message: widget.tooltip,
+            child: mainWidget(context),
+          )
+        : mainWidget(context);
+  }
+
+  Widget mainWidget(BuildContext context) {
     return InkWell(
       onTap: () async {
         if (widget.disabled || isLoading) {
@@ -224,11 +250,20 @@ class CircularButtonState extends State<CircularButton> {
           child: Loadable(
             size: widget.size * 0.7,
             isLoading: isLoading,
-            color: Colors.white,
+            color: widget.fontColor ?? Theme.of(context).colorScheme.onPrimary,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                widget.icon,
+                widget.icon != null
+                    ? widget.icon!
+                    : (widget.iconData != null
+                        ? Icon(
+                            widget.iconData!,
+                            color: widget.fontColor ??
+                                Theme.of(context).colorScheme.onPrimary,
+                            size: widget.iconSize,
+                          )
+                        : Container()),
                 widget.text != null
                     ? const SizedBox(
                         height: 2,
