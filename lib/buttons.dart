@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'loadable.dart';
 
+/// MainButton widget is a simple button with a text and an onClick callback.
+///
+/// When onClick is called, the button will display a [CircularProgressIndicator]
+///
 class MainButton extends StatefulWidget {
   final String text;
   final bool disabled;
@@ -15,6 +19,8 @@ class MainButton extends StatefulWidget {
   final double horizontalPadding;
   final double borderSize;
 
+  /// Creates a MainButton widget.
+  /// [text] is the text displayed on the button.
   const MainButton(
     this.text, {
     required this.onClick,
@@ -55,6 +61,9 @@ class MainButtonState extends State<MainButton> {
           });
           try {
             await widget.onClick();
+            setState(() {
+              isLoading = true;
+            });
           } on Exception catch (e) {
             if (widget.onError != null) {
               widget.onError!(e);
