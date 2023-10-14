@@ -13,6 +13,9 @@ dependencies:
     sdk: flutter
   shimmer: ^2.0.0
   either_dart: ^1.0.0
+  logger: ^1.1.0
+  persistent_bottom_nav_bar: ^4.0.2
+  carousel_slider: ^4.1.1
 
 dev_dependencies:
   flutter_test:
